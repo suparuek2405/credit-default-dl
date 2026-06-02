@@ -17,29 +17,28 @@ Full pipeline covered:
 ---
 
 ## 📁 Project Structure
-credit-default-dl/
-├── notebooks/
-│   ├── 01_eda.ipynb                  # Exploratory data analysis
-│   ├── 02_baseline_models.ipynb      # LR, SVM, XGBoost benchmarks
-│   └── 03_deep_learning.ipynb        # DL experiments + architecture search
-├── src/
-│   ├── dataset.py                    # PyTorch Dataset class
-│   ├── features.py                   # Feature engineering pipeline
-│   ├── models.py                     # All model architectures
-│   └── train.py                      # Training loop + early stopping
-└── results/
-├── metrics.md                    # All experiment results tracked
-└── figures/                      # All charts and plots
+
+    credit-default-dl/
+    ├── notebooks/
+    │   ├── 01_eda.ipynb                  # Exploratory data analysis
+    │   ├── 02_baseline_models.ipynb      # LR, SVM, XGBoost benchmarks
+    │   └── 03_deep_learning.ipynb        # DL experiments + architecture search
+    ├── src/
+    │   ├── dataset.py                    # PyTorch Dataset class
+    │   ├── features.py                   # Feature engineering pipeline
+    │   ├── models.py                     # All model architectures
+    │   └── train.py                      # Training loop + early stopping
+    └── results/
+        ├── metrics.md                    # All experiment results tracked
+        └── figures/                      # All charts and plots
 
 ---
 
 ## ⚙️ Setup
 
-```bash
-git clone https://github.com/suparuek2405/credit-default-dl.git
-cd credit-default-dl
-pip install -r requirements.txt
-```
+    git clone https://github.com/suparuek2405/credit-default-dl.git
+    cd credit-default-dl
+    pip install -r requirements.txt
 
 ---
 
