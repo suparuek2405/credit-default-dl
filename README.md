@@ -33,34 +33,76 @@ custom deep learning, and TabNet — systematically improving AUC at each stage.
 
 ---
 
-## 🔍 What This Project Covers
+## 🔍 The Story
 
-### 01 — Exploratory Data Analysis
-- Class imbalance analysis (22% default rate)
-- Payment status patterns across 6 months
-- Feature correlation heatmap
-- Credit limit and bill amount distributions
-- Domain-specific insights informing feature engineering
+### Chapter 1 — Understanding the Problem
 
-### 02 — Baseline Models
-- **Feature engineering:** 17 domain-specific financial features
-- **Resampling:** NearMiss v3 undersampling
-- **Tuning:** Optuna TPE sampler (50 trials per model)
-- **Ensemble:** Soft voting (LR + XGBoost + LinearSVC)
-- **Proper evaluation:** val set for tuning, test set for final score
+The dataset has a significant class imbalance: only 22% of customers defaulted.
+This means a naive model that always predicts "no default" would be 78% accurate
+but completely useless for catching real defaulters.
 
-### 03 — Custom Deep Learning
-- 4 PyTorch architectures compared (BaselineMLP, ResNet, AttentionMLP, AttentionMultiScale)
-- Iterative training improvements (dropout, LR scheduler, gradient clipping)
-- Optuna tuning (100 trials, expanded search space)
-- **Key finding:** NearMiss + complex models = overfitting on boundary samples
+![Class Distribution](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/01_class_distribution.png)
 
-### 04 — TabNet (Final Model)
-- Switched to TabNet: purpose-built for tabular data (Arik & Pfister, 2021)
-- Dropped NearMiss: used class weights instead → full 17,850 training samples
-- Optuna tuning (50 trials)
-- Built-in sequential attention: each step specializes in different risk dimensions
-- **AUC 0.7744 on unseen test set**
+### Chapter 2 — The Strongest Signal
+
+EDA revealed that **payment status is the single most predictive feature.**
+Customers who were 2+ months late in September (the most recent month) are
+overwhelmingly likely to default. Older months show weaker separation,
+confirming that recency matters more than payment history.
+
+![Payment Status Analysis](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/04_payment_status.png)
+
+This directly motivated engineering features like `late_pay_count`,
+`max_pay_status`, and `pay_trend` — which later ranked in TabNet's top 5.
+
+### Chapter 3 — Establishing Baselines
+
+Three models were tuned with Optuna (50 trials each) and combined into a
+soft voting ensemble. The ensemble achieved AUC 0.7598 on the unseen test set —
+the target for all deep learning experiments to beat.
+
+![Baseline ROC Curves](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/09_baseline_roc.png)
+
+### Chapter 4 — What TabNet Learned
+
+TabNet's built-in feature importance confirms the EDA hypothesis:
+payment behavior dominates. `PAY_0` (most recent payment status) ranks #1,
+and 3 of the top 10 features are domain-engineered — validating that
+financial domain knowledge adds real signal beyond raw features.
+
+![TabNet Feature Importance](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/17_tabnet_feature_importance.png)
+
+### Chapter 5 — How TabNet Makes Decisions
+
+Unlike a black-box model, TabNet reveals exactly which features each
+decision step focused on. Each step specializes in a different risk dimension,
+mimicking how a loan officer reviews an application from different angles.
+
+![TabNet Attention Steps](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/18_tabnet_attention_steps.png)
+
+---
+
+## 💡 Key Technical Decisions & Lessons
+
+**1. NearMiss vs Class Weights**
+NearMiss reduced training data from 17,850 → 6,600 samples. Complex models
+overfit these boundary samples in <10 epochs. Switching to class weights kept
+all training data and eliminated the overfitting problem entirely.
+
+**2. Feature Engineering Impact**
+17 engineered features covering payment trends, utilization ratios, and risk
+scores. `max_pay_status` ranked #2 in TabNet importance (0.135), validating
+that domain knowledge adds signal beyond raw features.
+
+**3. Architecture vs Data Quality**
+4 custom DL architectures all converged to similar AUC (~0.757). TabNet with
+full data immediately achieved 0.7784 baseline. Data quality > architecture
+complexity for tabular problems.
+
+**4. Proper Train/Val/Test Split**
+Val set used exclusively for hyperparameter tuning (Optuna).
+Test set used once per notebook for final honest evaluation.
+Prevents test set leakage from tuning decisions.
 
 ---
 
@@ -104,30 +146,6 @@ of a credit application.
 
 ---
 
-## 💡 Key Technical Decisions & Lessons
-
-**1. NearMiss vs Class Weights**
-NearMiss reduced training data from 17,850 → 6,600 samples. Complex models
-overfit these boundary samples in <10 epochs. Switching to class weights kept
-all training data and eliminated the overfitting problem entirely.
-
-**2. Feature Engineering Impact**
-17 engineered features covering payment trends, utilization ratios, and risk
-scores. `max_pay_status` ranked #2 in TabNet importance (0.135), validating
-that domain knowledge adds signal beyond raw features.
-
-**3. Architecture vs Data Quality**
-4 custom DL architectures all converged to similar AUC (~0.757). TabNet with
-full data immediately achieved 0.7784 baseline. Data quality > architecture
-complexity for tabular problems.
-
-**4. Proper Train/Val/Test Split**
-Val set used exclusively for hyperparameter tuning (Optuna).
-Test set used once per notebook for final honest evaluation.
-Prevents test set leakage from tuning decisions.
-
----
-
 ## 📁 Project Structure
 
     credit-default-dl/
@@ -152,9 +170,6 @@ Prevents test set leakage from tuning decisions.
     git clone https://github.com/suparuek2405/credit-default-dl.git
     cd credit-default-dl
     pip install -r requirements.txt
-
-**Run in Google Colab:**
-Open any notebook in `notebooks/` directly in Colab via the GitHub link.
 
 ---
 
