@@ -215,4 +215,4 @@ Data Scientist (AVP) · TTB Bank · Bangkok, Thailand
 Specializing in wealth analytics, deep learning, and financial ML.
 
 [![GitHub](https://img.shields.io/badge/GitHub-suparuek2405-black?logo=github)](https://github.com/suparuek2405)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://linkedin.com/in/suparuek2405)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Suparuek%20Wattananupan-blue?logo=linkedin)](https://www.linkedin.com/in/suparuek-wattananupan-7509aa181/)
