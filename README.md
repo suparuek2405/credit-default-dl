@@ -45,8 +45,8 @@ but completely useless for catching real defaulters.
 
 ### Chapter 2 — The Strongest Signal
 
-EDA revealed that **payment status is the single most predictive feature.**
-Customers who were 2+ months late in September (the most recent month) are
+EDA revealed that payment status is the single most predictive feature.
+Customers who were 2 or more months late in September (the most recent month) are
 overwhelmingly likely to default. Older months show weaker separation,
 confirming that recency matters more than payment history.
 
@@ -58,7 +58,7 @@ This directly motivated engineering features like `late_pay_count`,
 ### Chapter 3 — Establishing Baselines
 
 Three models were tuned with Optuna (50 trials each) and combined into a
-soft voting ensemble. The ensemble achieved AUC 0.7598 on the unseen test set —
+soft voting ensemble. The ensemble achieved AUC 0.7598 on the unseen test set,
 the target for all deep learning experiments to beat.
 
 ![Baseline ROC Curves](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/09_baseline_roc.png)
@@ -66,37 +66,52 @@ the target for all deep learning experiments to beat.
 ### Chapter 4 — What TabNet Learned
 
 TabNet's built-in feature importance confirms the EDA hypothesis:
-payment behavior dominates. `PAY_0` (most recent payment status) ranks #1,
-and 3 of the top 10 features are domain-engineered — validating that
+payment behavior dominates. `PAY_0` (most recent payment status) ranks first,
+and 3 of the top 10 features are domain-engineered, validating that
 financial domain knowledge adds real signal beyond raw features.
 
 ![TabNet Feature Importance](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/17_tabnet_feature_importance.png)
 
 ### Chapter 5 — How TabNet Makes Decisions
 
-Unlike a black-box model, TabNet reveals exactly which features each
-decision step focused on. Each step specializes in a different risk dimension,
-mimicking how a loan officer reviews an application from different angles.
+Most models give you a prediction and nothing else. TabNet actually shows its work.
+
+It processes features in 4 sequential decision steps, each one focusing on a
+different dimension of credit risk. Think of it like a loan officer reviewing
+an application from multiple angles before making a final call.
 
 ![TabNet Attention Steps](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/18_tabnet_attention_steps.png)
+
+Step 1 asks: is this customer's payment behavior getting worse? (`pay_trend`, `PAY_0`)
+
+Step 2 asks: how much do they owe and is it growing? (`avg_bill`, `PAY_2`)
+
+Step 3 asks: what happened most recently? (`BILL_AMT1`, `PAY_AMT2`)
+
+Step 4 asks: what is the overall risk picture? (`max_pay_status`, `LIMIT_BAL`)
+
+Only after all 4 steps does it make a final prediction. Each step builds on
+the previous one, progressively refining its understanding of the customer.
+This is why TabNet is particularly well-suited for financial data — the model
+is not just accurate, it is explainable.
 
 ---
 
 ## 💡 Key Technical Decisions & Lessons
 
 **1. NearMiss vs Class Weights**
-NearMiss reduced training data from 17,850 → 6,600 samples. Complex models
-overfit these boundary samples in <10 epochs. Switching to class weights kept
+NearMiss reduced training data from 17,850 to 6,600 samples. Complex models
+overfit these boundary samples in fewer than 10 epochs. Switching to class weights kept
 all training data and eliminated the overfitting problem entirely.
 
 **2. Feature Engineering Impact**
 17 engineered features covering payment trends, utilization ratios, and risk
-scores. `max_pay_status` ranked #2 in TabNet importance (0.135), validating
+scores. `max_pay_status` ranked second in TabNet importance (0.135), validating
 that domain knowledge adds signal beyond raw features.
 
 **3. Architecture vs Data Quality**
 4 custom DL architectures all converged to similar AUC (~0.757). TabNet with
-full data immediately achieved 0.7784 baseline. Data quality > architecture
+full data immediately achieved 0.7784 baseline. Data quality beats architecture
 complexity for tabular problems.
 
 **4. Proper Train/Val/Test Split**
@@ -108,18 +123,14 @@ Prevents test set leakage from tuning decisions.
 
 ## 🧠 Final Model: TabNet Architecture
 
-TabNet uses sequential sparse attention steps, each focusing on different
-feature subsets — similar to how a loan officer reviews different aspects
-of a credit application.
-
 **Decision flow:**
 
-| Step | Focus | Top Features |
+| Step | Question | Top Features |
 |---|---|---|
-| Step 1 | Payment behavior trends | `pay_trend`, `PAY_0` |
-| Step 2 | Bill amounts and history | `avg_bill`, `PAY_2` |
-| Step 3 | Recent transaction details | `BILL_AMT1`, `PAY_AMT2` |
-| Step 4 | Overall risk profile | `max_pay_status`, `LIMIT_BAL` |
+| Step 1 | Is payment behavior getting worse? | `pay_trend`, `PAY_0` |
+| Step 2 | How much do they owe and is it growing? | `avg_bill`, `PAY_2` |
+| Step 3 | What happened most recently? | `BILL_AMT1`, `PAY_AMT2` |
+| Step 4 | What is the overall risk picture? | `max_pay_status`, `LIMIT_BAL` |
 
 **Top 5 most important features:**
 
@@ -131,7 +142,7 @@ of a credit application.
 | pay_trend | Engineered ✨ | 0.063 |
 | BILL_AMT1 | Raw | 0.061 |
 
-> 3 of top 10 features are engineered — confirming domain knowledge adds real signal.
+> 3 of top 10 features are engineered, confirming domain knowledge adds real signal.
 
 **Best hyperparameters (Optuna, 50 trials):**
 
@@ -192,7 +203,7 @@ of a credit application.
 ## 📂 Dataset
 
 [UCI Default of Credit Card Clients](https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset)
-- 30,000 credit card holders · Taiwan · April–September 2005
+- 30,000 credit card holders · Taiwan · April-September 2005
 - 23 original features · 40 after feature engineering
 - 22% default rate (class imbalanced)
 
