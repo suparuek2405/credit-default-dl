@@ -222,7 +222,9 @@ This project code is for personal portfolio use. TabPFN-3 weights (NB05) are und
 ## Author
 
 **Suparuek Wattananupan**
-Data Scientist (AVP), TTB Bank, Bangkok
+Data Scientist · Banking · Bangkok, Thailand
+
+Specializing in wealth analytics, deep learning, and financial ML.
 
 [![GitHub](https://img.shields.io/badge/GitHub-suparuek2405-black?logo=github)](https://github.com/suparuek2405)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Suparuek%20Wattananupan-blue?logo=linkedin)](https://www.linkedin.com/in/suparuek-wattananupan-7509aa181/)
