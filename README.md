@@ -1,9 +1,11 @@
 # Credit Card Default Prediction 🏦
-> End-to-end Machine Learning & Deep Learning project — from EDA to TabNet
+> End-to-end Machine Learning & Deep Learning project — from EDA to Foundation Models
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red?logo=pytorch)](https://pytorch.org)
 [![TabNet](https://img.shields.io/badge/TabNet-Attentive%20DL-orange)](https://arxiv.org/abs/1908.07442)
+[![TabPFN](https://img.shields.io/badge/TabPFN--3-Foundation%20Model-purple)](https://github.com/PriorLabs/TabPFN)
+[![AutoGluon](https://img.shields.io/badge/AutoGluon-1.5-blue)](https://auto.gluon.ai)
 [![Optuna](https://img.shields.io/badge/Optuna-Hyperparameter%20Tuning-blue)](https://optuna.org)
 
 ---
@@ -11,25 +13,29 @@
 ## 🎯 Project Summary
 
 Built a complete ML/DL pipeline to predict credit card default risk on the UCI dataset
-(30,000 customers, Taiwan 2005). Progressed through 4 notebooks: EDA, baseline ML,
-custom deep learning, and TabNet — systematically improving AUC at each stage.
+(30,000 customers, Taiwan 2005). Progressed through 6 notebooks: EDA, baseline ML,
+custom deep learning, TabNet, TabPFN-3, and AutoGluon — systematically improving AUC at each stage.
 
-**Final result: TabNet achieved AUC 0.7744, beating all traditional ML baselines.**
+**Final result: AutoGluon best_quality_v150 achieved AUC 0.7903 — the new project best.**
 
 ---
 
 ## 📊 Results Progression
 
-| Stage | Model | AUC | Approach |
-|---|---|---|---|
-| NB02 | Logistic Regression | 0.7451 | Baseline |
-| NB02 | XGBoost | 0.7387 | Baseline |
-| NB02 | LinearSVC | 0.7456 | Baseline |
-| NB02 | **Ensemble (soft vote)** | **0.7598** | **Baseline best** |
-| NB03 | Custom MLP + Attention | 0.7597 | Deep Learning |
-| NB04 | **TabNet** | **0.7744** | **Final model** |
+| Stage | Model | AUC | Default Recall | Approach |
+|---|---|---|---|---|
+| NB02 | Logistic Regression | 0.7451 | — | Baseline |
+| NB02 | XGBoost | 0.7387 | — | Baseline |
+| NB02 | LinearSVC | 0.7456 | — | Baseline |
+| NB02 | **Ensemble (soft vote)** | **0.7598** | 0.665 | **Baseline best** |
+| NB03 | Custom MLP + Attention | 0.7597 | 0.686 | Deep Learning |
+| NB04 | TabNet | 0.7744 | 0.663 | Attentive DL |
+| NB05 | TabPFN-3 | 0.7889 | 0.570 | Foundation Model |
+| NB06 | **AutoGluon best_quality_v150** | **0.7903** | **0.598** | **Automated Ensemble** |
 
-> **+0.0146 AUC improvement** over best baseline with no resampling required.
+> **+0.0305 AUC improvement** over best baseline · **+0.0159** over TabNet · AutoGluon is the final best model.
+
+![Results Table](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/23_results_table_nb06.png)
 
 ---
 
@@ -95,6 +101,45 @@ the previous one, progressively refining its understanding of the customer.
 This is why TabNet is particularly well-suited for financial data — the model
 is not just accurate, it is explainable.
 
+### Chapter 6 — TabPFN-3: A Fundamentally Different Approach
+
+TabPFN-3 requires no training loop at all. Instead of learning from your data through
+gradient descent, it was pre-trained on millions of synthetic datasets and uses
+in-context learning: your training rows become the model's input context,
+and it makes predictions in a single forward pass — like a large language model
+performing few-shot inference.
+
+`.fit()` stores your data. `.predict()` reads it as a transformer prompt.
+
+Result: AUC 0.7889 with zero configuration — beating TabNet without a single
+hyperparameter decision.
+
+![TabPFN-3 ROC](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/19_tabpfn3_roc.png)
+
+> ⚠️ **License:** TabPFN-3 model weights are released under the TABPFN-3.0 License
+> (non-commercial use only). This project is a personal portfolio and used accordingly.
+> For commercial deployment, contact [PriorLabs](https://priorlabs.ai).
+
+### Chapter 7 — AutoGluon: Automated Ensemble Takes the Lead
+
+AutoGluon best_quality_v150 trains XGBoost, LightGBM, CatBoost, and neural networks
+with 8-fold bagging, then stacks them in a 2-layer weighted ensemble. No manual
+hyperparameter decisions required. Apache 2.0 licensed — fully commercial safe.
+
+CatBoost was the strongest single model (AUC 0.7906), but the weighted ensemble
+(AUC 0.7903) is used as the default predictor for better generalization.
+
+The standout result: AutoGluon achieved **half the false positives of TabPFN-3**
+(551 vs 1,044) at a higher recall — a more balanced outcome for a bank use case.
+
+![AutoGluon ROC](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/21_autogluon_roc.png)
+
+Permutation feature importance confirms PAY_0 as the dominant signal (3.5x more
+important than any other feature), with 5 of the top 10 features being
+domain-engineered — validating the feature engineering pipeline across all model families.
+
+![AutoGluon Feature Importance](https://raw.githubusercontent.com/suparuek2405/credit-default-dl/main/results/figures/22_autogluon_importance.png)
+
 ---
 
 ## 💡 Key Technical Decisions & Lessons
@@ -106,24 +151,31 @@ all training data and eliminated the overfitting problem entirely.
 
 **2. Feature Engineering Impact**
 17 engineered features covering payment trends, utilization ratios, and risk
-scores. `max_pay_status` ranked second in TabNet importance (0.135), validating
-that domain knowledge adds signal beyond raw features.
+scores. `max_pay_status` ranked second in TabNet importance (0.135), and 5 of
+AutoGluon's top 10 features are engineered — validating domain knowledge across
+all model families.
 
 **3. Architecture vs Data Quality**
 4 custom DL architectures all converged to similar AUC (~0.757). TabNet with
 full data immediately achieved 0.7784 baseline. Data quality beats architecture
 complexity for tabular problems.
 
-**4. Proper Train/Val/Test Split**
-Val set used exclusively for hyperparameter tuning (Optuna).
-Test set used once per notebook for final honest evaluation.
+**4. Foundation Models on Tabular Data**
+TabPFN-3 (zero tuning) beat TabNet (50 Optuna trials) by +0.0145 AUC.
+AutoGluon then beat TabPFN-3 by +0.0014, while also halving false positives.
+For this dataset, automated ensembles of classical models outperform
+in-context learning — but TabPFN wins on simplicity.
+
+**5. Proper Train/Val/Test Split**
+Val set used exclusively for hyperparameter tuning (Optuna) and early stopping.
+Test set (4,500 rows) used once per notebook for final honest evaluation.
 Prevents test set leakage from tuning decisions.
 
 ---
 
-## 🧠 Final Model: TabNet Architecture
+## 🧠 Model Summary
 
-**Decision flow:**
+### TabNet (NB04)
 
 | Step | Question | Top Features |
 |---|---|---|
@@ -132,28 +184,17 @@ Prevents test set leakage from tuning decisions.
 | Step 3 | What happened most recently? | `BILL_AMT1`, `PAY_AMT2` |
 | Step 4 | What is the overall risk picture? | `max_pay_status`, `LIMIT_BAL` |
 
-**Top 5 most important features:**
+### AutoGluon (NB06) — Top Features
 
-| Feature | Type | Importance |
-|---|---|---|
-| PAY_0 | Raw | 0.160 |
-| max_pay_status | Engineered ✨ | 0.135 |
-| LIMIT_BAL | Raw | 0.101 |
-| pay_trend | Engineered ✨ | 0.063 |
-| BILL_AMT1 | Raw | 0.061 |
+| Rank | Feature | Type | Importance |
+|---|---|---|---|
+| 1 | PAY_0 | Raw | 0.0245 |
+| 2 | late_pay_count | Engineered ✨ | 0.0069 |
+| 3 | LIMIT_BAL | Raw | 0.0040 |
+| 4 | bill_std | Engineered ✨ | 0.0040 |
+| 5 | util_ratio | Engineered ✨ | 0.0038 |
 
-> 3 of top 10 features are engineered, confirming domain knowledge adds real signal.
-
-**Best hyperparameters (Optuna, 50 trials):**
-
-| Parameter | Value | Meaning |
-|---|---|---|
-| n_d / n_a | 128 | Decision step width |
-| n_steps | 4 | Sequential attention steps |
-| gamma | 1.114 | Feature reuse coefficient |
-| lambda_sparse | 1.99e-04 | Sparsity regularization |
-| learning rate | 3.47e-02 | Adam optimizer LR |
-| batch size | 1024 | Training batch size |
+> PAY_0 is 3.5x more important than the next feature across all model families.
 
 ---
 
@@ -164,7 +205,9 @@ Prevents test set leakage from tuning decisions.
     │   ├── 01_eda.ipynb                  # EDA and domain insights
     │   ├── 02_baseline_models.ipynb      # LR, SVM, XGBoost + Optuna ensemble
     │   ├── 03_deep_learning.ipynb        # Custom PyTorch architecture search
-    │   └── 04_tabnet.ipynb               # TabNet final model
+    │   ├── 04_tabnet.ipynb               # TabNet final model
+    │   ├── 05_tabpfn3.ipynb              # TabPFN-3 foundation model benchmark
+    │   └── 06_autogluon.ipynb            # AutoGluon best_quality_v150 (final best)
     ├── src/
     │   ├── dataset.py                    # Data loading and splitting
     │   ├── features.py                   # Feature engineering pipeline
@@ -191,6 +234,8 @@ Prevents test set leakage from tuning decisions.
 | Python | 3.10+ | Core language |
 | PyTorch | 2.0+ | Deep learning framework |
 | pytorch-tabnet | 4.0+ | TabNet architecture |
+| tabpfn | 8.0+ | TabPFN-3 foundation model |
+| autogluon.tabular | 1.5+ | Automated ensemble (final best) |
 | scikit-learn | 1.3+ | Preprocessing and baselines |
 | XGBoost | 2.0+ | Gradient boosting baseline |
 | imbalanced-learn | 0.11+ | NearMiss resampling (NB02-03) |
@@ -203,7 +248,7 @@ Prevents test set leakage from tuning decisions.
 ## 📂 Dataset
 
 [UCI Default of Credit Card Clients](https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset)
-- 30,000 credit card holders · Taiwan · April-September 2005
+- 30,000 credit card holders · Taiwan · April–September 2005
 - 23 original features · 40 after feature engineering
 - 22% default rate (class imbalanced)
 
@@ -213,8 +258,22 @@ Prevents test set leakage from tuning decisions.
 
 - Arik, S. O., & Pfister, T. (2021). **TabNet: Attentive Interpretable Tabular Learning.**
   AAAI 2021. https://arxiv.org/abs/1908.07442
+- Hollmann, N. et al. (2025). **Accurate predictions on small data with a tabular foundation model.**
+  Nature. https://doi.org/10.1038/s41586-024-08328-6
+- Grinsztajn, L. et al. (2025). **TabPFN-2.5: Advancing the State of the Art in Tabular Foundation Models.**
+  arXiv. https://arxiv.org/abs/2511.08667
+- Erickson, N. et al. (2020). **AutoGluon-Tabular: Robust and Accurate AutoML for Structured Data.**
+  ICML AutoML Workshop. https://arxiv.org/abs/2003.06505
 - Wang, S., & Zhang, X. (2024). **Research on Credit Default Prediction Model Based on
   TabNet-Stacking.** Entropy, 26(10), 861. https://doi.org/10.3390/e26100861
+
+---
+
+## ⚠️ License Notes
+
+- This project code is for personal portfolio use.
+- **TabPFN-3** model weights (NB05) are under the TABPFN-3.0 License — non-commercial only.
+- All other models (NB02–NB04, NB06 AutoGluon) are Apache 2.0 / MIT — commercial use permitted.
 
 ---
 
